@@ -1,0 +1,380 @@
+/* Global Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #3893e8;
+    --success-color: #56b45d;
+    --danger-color: #dc524a;
+    --bg-color: #161512;
+    --panel-bg: #262421;
+    --text-color: #e0e0e0;
+    --border-color: #3d3d3d;
+    --input-bg: #2b2927;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Main Content Layout */
+.main-content {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 30px;
+    flex: 1;
+}
+
+/* Board Section */
+.board-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+#chessboard {
+    width: 100%;
+    max-width: 600px;
+    aspect-ratio: 1;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* FEN Input Section */
+.fen-input-section {
+    width: 100%;
+    max-width: 600px;
+}
+
+.fen-input-section label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.input-group {
+    display: flex;
+    gap: 10px;
+}
+
+#fenInput {
+    flex: 1;
+    padding: 12px;
+    background-color: var(--input-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-color);
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+#fenInput:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.error-message {
+    margin-top: 8px;
+    color: var(--danger-color);
+    font-size: 14px;
+    min-height: 20px;
+}
+
+/* Buttons */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #2878c8;
+    transform: translateY(-1px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-toggle {
+    width: 100%;
+    background-color: var(--success-color);
+    color: white;
+    font-size: 16px;
+}
+
+.btn-toggle:hover {
+    background-color: #4a9d50;
+}
+
+.btn-toggle.active {
+    background-color: var(--danger-color);
+}
+
+.btn-toggle.active:hover {
+    background-color: #c4463f;
+}
+
+/* Analysis Panel */
+.analysis-panel {
+    background-color: var(--panel-bg);
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.analysis-header {
+    margin-bottom: 8px;
+}
+
+/* Evaluation Section */
+.eval-section h3,
+.moves-section h3 {
+    margin-bottom: 16px;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+}
+
+.eval-bar-container {
+    width: 100%;
+    height: 30px;
+    background: linear-gradient(to right, var(--text-color) 50%, #1a1916 50%);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    border: 2px solid var(--border-color);
+}
+
+.eval-bar {
+    height: 100%;
+    background-color: var(--success-color);
+    transition: width 0.5s ease, background-color 0.5s ease;
+    position: relative;
+}
+
+.eval-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 2px;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+.eval-score {
+    margin-top: 12px;
+    font-size: 1.8rem;
+    font-weight: 700;
+    text-align: center;
+    transition: color 0.3s;
+}
+
+.eval-depth {
+    text-align: center;
+    font-size: 0.9rem;
+    color: #999;
+    margin-top: 4px;
+}
+
+/* Top Moves List */
+.top-moves-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.move-item {
+    padding: 14px;
+    background-color: var(--input-bg);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.move-item:hover {
+    background-color: #3a3834;
+    border-color: var(--primary-color);
+    transform: translateX(4px);
+}
+
+.move-item.previewed {
+    border-color: var(--primary-color);
+    background-color: #3a3834;
+}
+
+.move-san {
+    font-weight: 600;
+    font-size: 1.1rem;
+    font-family: 'Courier New', monospace;
+}
+
+.move-eval {
+    color: #999;
+    font-size: 0.95rem;
+}
+
+.move-placeholder {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+
+/* Status Message */
+.status-message {
+    padding: 12px;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 14px;
+    min-height: 20px;
+}
+
+.status-message.info {
+    background-color: rgba(56, 147, 232, 0.2);
+    color: var(--primary-color);
+}
+
+.status-message.error {
+    background-color: rgba(220, 82, 74, 0.2);
+    color: var(--danger-color);
+}
+
+.status-message.success {
+    background-color: rgba(86, 180, 93, 0.2);
+    color: var(--success-color);
+}
+
+/* Footer */
+footer {
+    margin-top: 40px;
+    text-align: center;
+    color: #666;
+    font-size: 0.9rem;
+    padding: 20px 0;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+
+    .analysis-panel {
+        max-width: 600px;
+        margin: 0 auto;
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    header h1 {
+        font-size: 1.5rem;
+    }
+
+    .input-group {
+        flex-direction: column;
+    }
+
+    #fenInput {
+        font-size: 12px;
+    }
+
+    .analysis-panel {
+        padding: 16px;
+    }
+
+    .eval-score {
+        font-size: 1.5rem;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Focus styles for keyboard navigation */
+button:focus-visible,
+input:focus-visible {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Custom arrow styles for Chessground */
+.cg-custom-svgs {
+    pointer-events: none;
+}
+
+.cg-custom-svgs svg {
+    overflow: visible;
+}
+
+.arrow-move {
+    opacity: 0;
+    animation: fadeIn 0.5s ease-in forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 0.8;
+    }
+}

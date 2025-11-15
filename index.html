@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lichess Board Analyzer</title>
+    <link rel="stylesheet" href="/node_modules/chessground/assets/chessground.base.css">
+    <link rel="stylesheet" href="/node_modules/chessground/assets/chessground.brown.css">
+    <link rel="stylesheet" href="/node_modules/chessground/assets/chessground.cburnett.css">
+    <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>♔ Board Analyzer</h1>
+        </header>
+
+        <div class="main-content">
+            <!-- Chess Board Section -->
+            <div class="board-section">
+                <div id="chessboard" class="blue merida"></div>
+
+                <!-- FEN Input Section -->
+                <div class="fen-input-section">
+                    <label for="fenInput">FEN Position:</label>
+                    <div class="input-group">
+                        <input
+                            type="text"
+                            id="fenInput"
+                            placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+                            aria-label="FEN input"
+                        />
+                        <button id="loadFenBtn" class="btn btn-primary">Load Position</button>
+                    </div>
+                    <div id="fenError" class="error-message" role="alert"></div>
+                </div>
+            </div>
+
+            <!-- Analysis Panel -->
+            <div class="analysis-panel">
+                <div class="analysis-header">
+                    <button id="toggleAnalysisBtn" class="btn btn-toggle">
+                        <span id="analysisLabel">Start Analysis</span>
+                    </button>
+                </div>
+
+                <!-- Evaluation Display -->
+                <div class="eval-section">
+                    <h3>Evaluation</h3>
+                    <div class="eval-bar-container">
+                        <div id="evalBar" class="eval-bar"></div>
+                    </div>
+                    <div id="evalScore" class="eval-score">+0.00</div>
+                    <div id="evalDepth" class="eval-depth">Depth: -</div>
+                </div>
+
+                <!-- Top Moves -->
+                <div class="moves-section">
+                    <h3>Top 3 Moves</h3>
+                    <div id="topMovesList" class="top-moves-list">
+                        <div class="move-placeholder">Start analysis to see moves...</div>
+                    </div>
+                </div>
+
+                <!-- Status Messages -->
+                <div id="statusMessage" class="status-message"></div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Powered by Stockfish WASM • Drag pieces to move • Analysis depth: 15</p>
+        </footer>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
