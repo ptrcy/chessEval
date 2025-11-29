@@ -110,6 +110,16 @@ class MobileChess {
         if (this.elements.confirmSetupBtn) {
             this.elements.confirmSetupBtn.addEventListener('click', () => this.hideSetupControls());
         }
+
+        // Handle resizing
+        window.addEventListener('resize', () => {
+            if (this.board) this.board.redrawAll();
+        });
+
+        // Force a redraw after a short delay to ensure layout is settled
+        setTimeout(() => {
+            if (this.board) this.board.redrawAll();
+        }, 100);
     }
 
     onMove(orig, dest) {
@@ -196,8 +206,8 @@ class MobileChess {
             const { move } = moveData;
             const from = move.substring(0, 2);
             const to = move.substring(2, 4);
-            const brushes = ['paleBlue', 'paleGreen', 'yellow'];
-            return { orig: from, dest: to, brush: brushes[index] || 'paleBlue' };
+            const brushes = ['blue', 'green', 'yellow'];
+            return { orig: from, dest: to, brush: brushes[index] || 'blue' };
         });
 
         this.currentArrows = arrows;
