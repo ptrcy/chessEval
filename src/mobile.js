@@ -297,58 +297,119 @@ class MobileChess {
         this.loadPosition(newFen);
     }
 
-    handleImageUpload(event) {
+    async handleImageUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
 
         this.showStatus('Processing image...', 'info');
 
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const base64Data = e.target.result;
+        try {
+            // Compress image if needed
+            const base64Data = await this.compressImage(file);
 
-            try {
-                const response = await fetch('/.netlify/functions/board-to-fen', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ image: base64Data })
-                });
+            // Calculate size for display
+            const sizeInBytes = Math.round((base64Data.length - 22) * 3 / 4); // approx
+            const sizeInKB = (sizeInBytes / 1024).toFixed(2);
+            this.showStatus(`Uploading (${sizeInKB} KB)...`, 'info');
 
-                if (!response.ok) {
-                    throw new Error(`Server error: ${response.statusText}`);
-                }
+            const response = await fetch('/.netlify/functions/board-to-fen', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: base64Data })
+            });
 
-                const data = await response.json();
-
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-
-                if (data.fen) {
-                    console.log('Received FEN from API:', data.fen);
-                    this.showStatus('Board detected!', 'success');
-                    this.loadPosition(data.fen);
-
-                    // Reset visual orientation to white
-                    this.board.set({ orientation: 'white' });
-
-                    // Show setup controls
-                    this.showSetupControls();
-                } else {
-                    throw new Error('No FEN returned');
-                }
-
-            } catch (error) {
-                console.error('Image processing error:', error);
-                this.showStatus(`Error: ${error.message}`, 'error');
-            } finally {
-                // Clear input so same file can be selected again
-                this.elements.cameraInput.value = '';
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.statusText}`);
             }
-        };
-        reader.readAsDataURL(file);
+
+            const data = await response.json();
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            if (data.fen) {
+                console.log('Received FEN from API:', data.fen);
+                this.showStatus('Board detected!', 'success');
+                this.loadPosition(data.fen);
+
+                // Reset visual orientation to white
+                this.board.set({ orientation: 'white' });
+
+                // Show setup controls
+                this.showSetupControls();
+            } else {
+                throw new Error('No FEN returned');
+            }
+
+        } catch (error) {
+            console.error('Image processing error:', error);
+            this.showStatus(`Error: ${error.message}`, 'error');
+        } finally {
+            // Clear input so same file can be selected again
+            this.elements.cameraInput.value = '';
+        }
+    }
+
+    /**
+     * Compresses an image file if it exceeds a size threshold.
+     * @param {File} file - The image file to compress.
+     * @param {number} maxWidth - Maximum width for the image (default 1024px).
+     * @param {number} quality - JPEG quality (0 to 1, default 0.7).
+     * @returns {Promise<string>} - A Promise resolving to the base64 data URL.
+     */
+    compressImage(file, maxWidth = 1024, quality = 0.7) {
+        return new Promise((resolve, reject) => {
+            // If smaller, return original file as data URL
+            if (file.size < 500000) {
+                console.log('Image is small enough (< 500KB), skipping compression.');
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(e);
+                reader.readAsDataURL(file);
+                return;
+            }
+
+            console.log(`Image size (${(file.size / 1024 / 1024).toFixed(2)} MB) exceeds threshold. Compressing...`);
+
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+
+                    // Calculate new dimensions
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Compress to JPEG
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+                    // Calculate approximate size
+                    const head = 'data:image/jpeg;base64,';
+                    const sizeInBytes = Math.round((dataUrl.length - head.length) * 3 / 4);
+                    console.log(`Compression complete. Final size: ${(sizeInBytes / 1024).toFixed(2)} KB`);
+
+                    resolve(dataUrl);
+                };
+                img.onerror = (err) => reject(err);
+            };
+            reader.onerror = (err) => reject(err);
+        });
     }
 
     loadPosition(fen) {

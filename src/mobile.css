@@ -26,20 +26,6 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 10px;
-    position: relative;
-    /* For absolute positioning of overlays */
-}
-
-.board-container {
-    width: 95vw;
-    max-width: 600px;
-    aspect-ratio: 1;
-    border-radius: 4px;
-    transition: border-color 0.3s ease;
-    border: var(--border-width) solid transparent;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
 
 /* Turn Indicators via Border */
 .turn-white {
