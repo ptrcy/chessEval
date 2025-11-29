@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -10,7 +9,6 @@
     <link rel="stylesheet" href="/node_modules/chessground/assets/chessground.cburnett.css">
     <link rel="stylesheet" href="/src/mobile.css">
 </head>
-
 <body>
     <div class="mobile-container">
         <!-- Board Container with Border Turn Indicator -->
@@ -20,10 +18,28 @@
 
         <!-- Navigation Controls -->
         <div class="mobile-controls">
-            <button id="undoBtn" class="mobile-btn" title="Undo Move">↶</button>
-            <button id="cameraBtn" class="mobile-btn" title="Scan Board">📷</button>
-            <button id="flipBtn" class="mobile-btn" title="Flip Board">⇅</button>
-            <button id="redoBtn" class="mobile-btn" title="Redo Move">↷</button>
+            <button id="undoBtn" class="mobile-btn" title="Undo Move" aria-label="Undo Move">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 15L3 9l6-6M3 9h12a4 4 0 010 8h-1" />
+                </svg>
+            </button>
+            <button id="cameraBtn" class="mobile-btn" title="Scan Board" aria-label="Scan Board">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h3l1-1h6l1 1h3a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V9a2 2 0 012-2z" />
+                    <path d="M12 18a4 4 0 100-8 4 4 0 000 8z" />
+                </svg>
+            </button>
+            <button id="flipBtn" class="mobile-btn" title="Flip Board" aria-label="Flip Board">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4.5 15.75l3 3 3-3M7.5 18.75V5.25M19.5 8.25l-3-3-3 3M16.5 5.25v13.5" />
+                </svg>
+            </button>
+            <button id="redoBtn" class="mobile-btn" title="Redo Move" aria-label="Redo Move">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M15 9l6 6-6 6M21 15H9a4 4 0 010-8h1" />
+                </svg>
+            </button>
+            <div class="eval-display" id="evalDisplay" title="Engine evaluation">--</div>
         </div>
 
         <!-- Setup Controls Overlay -->
@@ -31,20 +47,19 @@
             <div class="setup-header">Adjust Board Setup</div>
             <div class="setup-buttons">
                 <button id="toggleTurnBtn" class="mobile-btn">White to Move</button>
-                <button id="rotateBoardBtn" class="mobile-btn">Rotate Board 180°</button>
+                <button id="rotateBoardBtn" class="mobile-btn">Rotate Board 180 deg</button>
             </div>
             <button id="confirmSetupBtn" class="confirm-btn">Start Playing</button>
         </div>
 
         <!-- Hidden controls for functionality -->
         <div style="display: none;">
-            <input type="text" id="fenInput" />
-            <input type="file" id="cameraInput" accept="image/*" capture="environment" />
+            <input type="text" id="fenInput">
+            <input type="file" id="cameraInput" accept="image/*" capture="environment">
             <div id="statusMessage"></div>
         </div>
     </div>
 
     <script type="module" src="/src/mobile.js"></script>
 </body>
-
 </html>

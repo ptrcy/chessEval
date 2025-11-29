@@ -36,7 +36,8 @@ class MobileChess {
             setupControls: document.getElementById('setupControls'),
             toggleTurnBtn: document.getElementById('toggleTurnBtn'),
             rotateBoardBtn: document.getElementById('rotateBoardBtn'),
-            confirmSetupBtn: document.getElementById('confirmSetupBtn')
+            confirmSetupBtn: document.getElementById('confirmSetupBtn'),
+            evalDisplay: document.getElementById('evalDisplay')
         };
 
         this.init();
@@ -80,6 +81,7 @@ class MobileChess {
 
         this.updateTurnIndicator();
         this.updateButtons();
+        this.updateEvalDisplay(null, '--');
 
         // Button listeners
         if (this.elements.undoBtn) {
@@ -190,10 +192,46 @@ class MobileChess {
         }
     }
 
+    updateEvalDisplay(result, labelOverride) {
+        const el = this.elements.evalDisplay;
+        if (!el) return;
+
+        if (labelOverride) {
+            el.textContent = labelOverride;
+            return;
+        }
+
+        if (!result) {
+            el.textContent = '--';
+            return;
+        }
+
+        let text = '--';
+        if (typeof result.mate === 'number') {
+            const mateMoves = Math.abs(result.mate);
+            text = result.mate > 0 ? `#${mateMoves}` : `#-${mateMoves}`;
+        } else if (typeof result.score === 'number') {
+            const cp = result.score / 100;
+            const sign = cp > 0 ? '+' : '';
+            text = `${sign}${cp.toFixed(2)}`;
+        }
+
+        el.textContent = text;
+    }
+
     runAnalysis() {
-        if (!this.engine || this.chess.isGameOver()) return;
+        if (!this.engine) return;
+
+        if (this.chess.isGameOver()) {
+            this.updateEvalDisplay(null, 'Game over');
+            return;
+        }
+
+        // Show that we're evaluating while waiting on engine output
+        this.updateEvalDisplay(null, '...');
 
         this.engine.analyze(this.chess.fen(), 15, (result) => {
+            this.updateEvalDisplay(result);
             if (result.moves && result.moves.length > 0) {
                 this.showMoveArrows(result.moves.slice(0, 3));
             }
@@ -373,8 +411,8 @@ class MobileChess {
     compressImage(file, maxWidth = 1024, quality = 0.7) {
         return new Promise((resolve, reject) => {
             // If smaller, return original file as data URL
-            if (file.size < 500000) {
-                console.log('Image is small enough (< 500KB), skipping compression.');
+            if (file.size < 300000) {
+                console.log('Image is small enough (< 300KB), skipping compression.');
                 const reader = new FileReader();
                 reader.onload = (e) => resolve(e.target.result);
                 reader.onerror = (e) => reject(e);
@@ -449,6 +487,9 @@ class MobileChess {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize once DOM is ready to ensure board container exists
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => new MobileChess());
+} else {
     new MobileChess();
-});
+}

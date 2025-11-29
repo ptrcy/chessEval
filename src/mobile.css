@@ -26,6 +26,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+}
 
 /* Turn Indicators via Border */
 .turn-white {
@@ -39,6 +40,19 @@ body {
 #chessboard {
     width: 100%;
     height: 100%;
+}
+
+/* Board container framing and sizing */
+.board-container {
+    position: relative;
+    width: 90vmin;
+    height: 90vmin;
+    max-width: 85vh;
+    max-height: 85vh;
+    border: var(--border-width) solid #2c2a26;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 /* Custom arrow styles for Chessground */
@@ -67,6 +81,7 @@ body {
     bottom: 20px;
     display: flex;
     gap: 20px;
+    align-items: center;
     z-index: 100;
 }
 
@@ -88,9 +103,33 @@ body {
     transition: all 0.2s;
 }
 
+.mobile-btn svg {
+    width: 26px;
+    height: 26px;
+    stroke: #fff;
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
 .mobile-btn:active {
     transform: scale(0.95);
     background-color: rgba(255, 255, 255, 0.2);
+}
+
+.eval-display {
+    min-width: 70px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #fff;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    letter-spacing: 0.5px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
 }
 
 /* Setup Controls Overlay */
