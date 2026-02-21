@@ -18,6 +18,7 @@ class MobileChess {
         this.engine = null;
         this.currentArrows = [];
         this.arrowAnimationTimeout = null;
+        this.arrowAnimationGeneration = 0;
 
         // History tracking for Redo
         this.moveHistory = [];
@@ -146,8 +147,8 @@ class MobileChess {
         }
     }
 
-    updateBoardState() {
-        this.board.set({
+    updateBoardState(orientation) {
+        const config = {
             fen: this.chess.fen(),
             turnColor: this.chess.turn() === 'w' ? 'white' : 'black',
             movable: {
@@ -156,7 +157,9 @@ class MobileChess {
             },
             lastMove: this.currentMoveIndex >= 0 ?
                 [this.moveHistory[this.currentMoveIndex].from, this.moveHistory[this.currentMoveIndex].to] : undefined
-        });
+        };
+        if (orientation) config.orientation = orientation;
+        this.board.set(config);
 
         this.updateTurnIndicator();
         this.updateButtons();
@@ -227,10 +230,16 @@ class MobileChess {
             return;
         }
 
+        // Stop any in-progress analysis before starting a new one
+        this.engine.stop();
+
         // Show that we're evaluating while waiting on engine output
         this.updateEvalDisplay(null, '...');
 
-        this.engine.analyze(this.chess.fen(), 15, (result) => {
+        // Snapshot the FEN so stale callbacks from a previous position are ignored
+        const analysisFen = this.chess.fen();
+        this.engine.analyze(analysisFen, 15, (result) => {
+            if (this.chess.fen() !== analysisFen) return;
             this.updateEvalDisplay(result);
             if (result.moves && result.moves.length > 0) {
                 this.showMoveArrows(result.moves.slice(0, 3));
@@ -255,10 +264,16 @@ class MobileChess {
     animateArrows(arrows) {
         if (this.arrowAnimationTimeout) clearTimeout(this.arrowAnimationTimeout);
 
+        // Use a generation counter so any previously-scheduled callbacks become no-ops
+        const generation = ++this.arrowAnimationGeneration;
+
         let currentIndex = 0;
         const visibleArrows = [];
 
         const showNextArrow = () => {
+            // Bail out if this animation loop has been superseded
+            if (generation !== this.arrowAnimationGeneration) return;
+
             if (currentIndex < arrows.length) {
                 visibleArrows.push(arrows[currentIndex]);
                 this.board.setShapes(visibleArrows);
@@ -266,6 +281,7 @@ class MobileChess {
                 this.arrowAnimationTimeout = setTimeout(showNextArrow, 600);
             } else {
                 this.arrowAnimationTimeout = setTimeout(() => {
+                    if (generation !== this.arrowAnimationGeneration) return;
                     currentIndex = 0;
                     visibleArrows.length = 0;
                     this.board.setShapes([]);
@@ -278,6 +294,7 @@ class MobileChess {
 
     clearArrows() {
         if (this.arrowAnimationTimeout) clearTimeout(this.arrowAnimationTimeout);
+        this.arrowAnimationGeneration++;   // invalidate any in-flight animation loop
         this.board.setShapes([]);
         this.currentArrows = [];
     }
@@ -381,10 +398,7 @@ class MobileChess {
             if (data.fen) {
                 console.log('Received FEN from API:', data.fen);
                 this.showStatus('Board detected!', 'success');
-                this.loadPosition(data.fen);
-
-                // Reset visual orientation to white
-                this.board.set({ orientation: 'white' });
+                this.loadPosition(data.fen, 'white');
 
                 // Show setup controls
                 this.showSetupControls();
@@ -460,17 +474,17 @@ class MobileChess {
         });
     }
 
-    loadPosition(fen) {
+    loadPosition(fen, orientation) {
         try {
             if (fen.split(' ').length < 6) {
                 fen += ' w - - 0 1';
             }
-            const testChess = new Chess(fen);
             this.chess.load(fen);
             this.moveHistory = [];
             this.currentMoveIndex = -1;
-            this.updateBoardState();
+            this.updateBoardState(orientation);
         } catch (e) {
+            console.error('loadPosition error:', e);
             this.showStatus('Invalid FEN loaded', 'error');
         }
     }
