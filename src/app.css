@@ -1,0 +1,202 @@
+/* ─── Reset ──────────────────────────────────────────────────────────────── */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ─── Design tokens ──────────────────────────────────────────────────────── */
+:root {
+    --bg-color:      #161512;
+    --border-width:  8px;
+    --success-color: #4caf50;
+
+    /* Button / icon sizes — responsive via clamp */
+    --ctrl-size: clamp(44px, 6vmin, 64px);
+    --icon-size: clamp(22px, 3.5vmin, 32px);
+
+    /* Gap between controls — grows with screen width, capped */
+    --ctrl-gap: clamp(6px, 1.6vw, 22px);
+}
+
+/* Very small phones: tighten further */
+@media (max-width: 400px) {
+    :root {
+        --ctrl-size: 40px;
+        --icon-size: 20px;
+        --ctrl-gap:  4px;
+    }
+}
+
+/* ─── Body ───────────────────────────────────────────────────────────────── */
+body {
+    background-color: var(--bg-color);
+    height: 100vh;
+    height: 100dvh; /* accounts for mobile browser chrome */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* ─── Outer wrapper: column layout ──────────────────────────────────────── */
+.mobile-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+    gap: 12px;
+}
+
+/* ─── Board container ────────────────────────────────────────────────────── */
+/*
+ * Square board that never overflows in either axis.
+ *   • max width  = viewport width minus horizontal padding (32 px)
+ *   • max height = viewport height minus controls bar (~64 px) + padding + gap (~96 px total)
+ * min() picks the smaller, keeping the board square.
+ * max-width: 800px prevents an enormous board on 4K screens.
+ */
+.board-container {
+    position: relative;
+    width: min(calc(100vw - 32px), calc(100vh - 96px));
+    width: min(calc(100vw - 32px), calc(100dvh - 96px)); /* dvh variant */
+    aspect-ratio: 1;
+    max-width: 800px;
+    flex-shrink: 0;
+
+    border: var(--border-width) solid #2c2a26;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    transition: border-color 0.35s ease;
+}
+
+/* Turn indicators — coloured border */
+.turn-white { border-color: #e8e8e8; }
+.turn-black { border-color: #2e2e2e; }
+
+/* Chessground fills the container */
+#chessboard {
+    width: 100%;
+    height: 100%;
+}
+
+/* ─── Arrow / SVG helpers (Chessground) ──────────────────────────────────── */
+.cg-custom-svgs          { pointer-events: none; }
+.cg-custom-svgs svg      { overflow: visible; }
+
+.arrow-move {
+    opacity: 0;
+    animation: fadeIn 0.5s ease-in forwards;
+}
+@keyframes fadeIn { to { opacity: 0.8; } }
+
+/* ─── Controls bar ───────────────────────────────────────────────────────── */
+.mobile-controls {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--ctrl-gap);
+    flex-shrink: 0;
+    flex-wrap: nowrap;
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
+.mobile-btn {
+    width:  var(--ctrl-size);
+    height: var(--ctrl-size);
+    flex-shrink: 0;
+
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    transition: background-color 0.18s, transform 0.12s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-btn svg {
+    width:  var(--icon-size);
+    height: var(--icon-size);
+    stroke: #fff;
+    fill:   none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    overflow: visible;
+}
+
+.mobile-btn:active {
+    transform: scale(0.92);
+    background-color: rgba(255, 255, 255, 0.22);
+}
+
+.mobile-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+/* ─── Toggle-turn button — dynamic fill ─────────────────────────────────── */
+/*
+ * The JS sets --turn-fill on the button element itself.
+ * .turn-ring  → always white stroke (border ring)
+ * .turn-fill  → inner disc, colour from CSS variable
+ */
+#toggleTurnBtn .turn-ring {
+    fill: none;
+    stroke-width: 2;
+    /* stroke: inherited white from .mobile-btn svg */
+}
+
+#toggleTurnBtn .turn-fill {
+    fill: var(--turn-fill, #f0f0f0);
+    stroke: none;
+    transition: fill 0.3s ease;
+}
+
+/* ─── Eval display ───────────────────────────────────────────────────────── */
+.eval-display {
+    flex-shrink: 0;
+    min-width: clamp(52px, 9vmin, 88px);
+    padding: clamp(6px, 1.2vmin, 12px) clamp(8px, 1.6vmin, 14px);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: #fff;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    font-size: clamp(12px, 1.8vmin, 18px);
+    text-align: center;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+/* ─── Status toast (shown briefly after image scan) ─────────────────────── */
+#statusMessage {
+    position: fixed;
+    bottom: calc(var(--ctrl-size) + 30px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(30, 30, 30, 0.92);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: clamp(13px, 1.8vmin, 16px);
+    border: 1px solid rgba(255,255,255,0.12);
+    white-space: nowrap;
+    z-index: 500;
+    pointer-events: none;
+    display: none;
+}
+
+#statusMessage.success { border-color: #4caf50; }
+#statusMessage.error   { border-color: #e53935; }
+#statusMessage.info    { border-color: #1e88e5; }

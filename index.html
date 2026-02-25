@@ -7,59 +7,75 @@
     <link rel="stylesheet" href="/node_modules/chessground/assets/chessground.base.css">
     <link rel="stylesheet" href="/node_modules/chessground/assets/chessground.brown.css">
     <link rel="stylesheet" href="/node_modules/chessground/assets/chessground.cburnett.css">
-    <link rel="stylesheet" href="/src/mobile.css">
+    <link rel="stylesheet" href="/src/app.css">
 </head>
 <body>
     <div class="mobile-container">
-        <!-- Board Container with Border Turn Indicator -->
+
+        <!-- Board -->
         <div id="boardContainer" class="board-container turn-white">
             <div id="chessboard" class="brown merida"></div>
         </div>
 
-        <!-- Navigation Controls -->
+        <!-- Controls bar -->
         <div class="mobile-controls">
+
             <button id="undoBtn" class="mobile-btn" title="Undo Move" aria-label="Undo Move">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M9 15L3 9l6-6M3 9h12a4 4 0 010 8h-1" />
                 </svg>
             </button>
+
+            <!-- Button 1: Toggle whose turn it is -->
+            <button id="toggleTurnBtn" class="mobile-btn" title="White to move — tap to toggle" aria-label="Toggle Turn">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <!-- Outer ring -->
+                    <circle cx="12" cy="12" r="9" class="turn-ring" />
+                    <!-- Inner filled circle — colour driven by CSS var -->
+                    <circle cx="12" cy="12" r="5.5" class="turn-fill" />
+                </svg>
+            </button>
+
             <button id="cameraBtn" class="mobile-btn" title="Scan Board" aria-label="Scan Board">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M4 7h3l1-1h6l1 1h3a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V9a2 2 0 012-2z" />
-                    <path d="M12 18a4 4 0 100-8 4 4 0 000 8z" />
+                    <circle cx="12" cy="13" r="3" />
                 </svg>
             </button>
-            <button id="flipBtn" class="mobile-btn" title="Flip Board" aria-label="Flip Board">
+
+            <!-- Button 3: Rotate FEN 180° — fixes wrong scan orientation -->
+            <button id="rotateFenBtn" class="mobile-btn" title="Rotate Board 180° — fix scan orientation" aria-label="Rotate Board 180°">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+            </button>
+
+            <!-- Button 2: Flip board perspective (visual only) -->
+            <button id="flipBtn" class="mobile-btn" title="Flip Board Perspective" aria-label="Flip Perspective">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M4.5 15.75l3 3 3-3M7.5 18.75V5.25M19.5 8.25l-3-3-3 3M16.5 5.25v13.5" />
                 </svg>
             </button>
+
             <button id="redoBtn" class="mobile-btn" title="Redo Move" aria-label="Redo Move">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M15 9l6 6-6 6M21 15H9a4 4 0 010-8h1" />
                 </svg>
             </button>
+
             <div class="eval-display" id="evalDisplay" title="Engine evaluation">--</div>
+
         </div>
 
-        <!-- Setup Controls Overlay -->
-        <div id="setupControls" class="setup-controls" style="display: none;">
-            <div class="setup-header">Adjust Board Setup</div>
-            <div class="setup-buttons">
-                <button id="toggleTurnBtn" class="mobile-btn">White to Move</button>
-                <button id="rotateBoardBtn" class="mobile-btn">Rotate Board 180 deg</button>
-            </div>
-            <button id="confirmSetupBtn" class="confirm-btn">Start Playing</button>
-        </div>
-
-        <!-- Hidden controls for functionality -->
-        <div style="display: none;">
+        <!-- Hidden inputs -->
+        <div style="display:none;">
             <input type="text" id="fenInput">
             <input type="file" id="cameraInput" accept="image/*" capture="environment">
             <div id="statusMessage"></div>
         </div>
+
     </div>
 
-    <script type="module" src="/src/mobile.js"></script>
+    <script type="module" src="/src/app.js"></script>
 </body>
 </html>
