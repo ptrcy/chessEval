@@ -597,12 +597,9 @@ function removeBleeding(imageData) {
 
     const denoised = _gaussianBlur(norm, width, height, 2);
 
-    const adaptSigma = (35 / 2 - 1) * 0.3 + 0.8;
-    const localMean  = _gaussianBlur(denoised, width, height, adaptSigma);
-
     const out = new Uint8ClampedArray(n * 4);
     for (let i = 0; i < n; i++) {
-        const v = denoised[i] > localMean[i] - 10 ? 255 : 0;
+        const v = Math.round(denoised[i]);
         out[i * 4]     = v;
         out[i * 4 + 1] = v;
         out[i * 4 + 2] = v;
