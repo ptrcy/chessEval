@@ -372,8 +372,12 @@ class MobileChess {
             // Compress image if needed
             const base64Data = await this.compressImage(file);
 
+            // Apply bleed-through removal before sending to API
+            this.showStatus('Cleaning image...', 'info');
+            const cleanedData = await this.applyRemoveBleeding(base64Data);
+
             // Calculate size for display
-            const sizeInBytes = Math.round((base64Data.length - 22) * 3 / 4); // approx
+            const sizeInBytes = Math.round((cleanedData.length - 22) * 3 / 4); // approx
             const sizeInKB = (sizeInBytes / 1024).toFixed(2);
             this.showStatus(`Uploading (${sizeInKB} KB)...`, 'info');
 
@@ -382,7 +386,7 @@ class MobileChess {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ image: base64Data })
+                body: JSON.stringify({ image: cleanedData })
             });
 
             if (!response.ok) {
@@ -474,6 +478,25 @@ class MobileChess {
         });
     }
 
+    applyRemoveBleeding(base64Data) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = base64Data;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const cleaned = removeBleeding(imageData);
+                ctx.putImageData(cleaned, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+            };
+            img.onerror = (err) => reject(err);
+        });
+    }
+
     loadPosition(fen, orientation) {
         try {
             if (fen.split(' ').length < 6) {
@@ -506,4 +529,85 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => new MobileChess());
 } else {
     new MobileChess();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Image pre-processing: remove bleed-through / uneven illumination
+// ─────────────────────────────────────────────────────────────────────────────
+
+function _gaussianBlur(src, width, height, sigma) {
+    const radius = Math.ceil(3 * sigma);
+    const size   = 2 * radius + 1;
+    const kernel = new Float32Array(size);
+    let ksum = 0;
+    for (let i = 0; i < size; i++) {
+        const x = i - radius;
+        kernel[i] = Math.exp(-(x * x) / (2 * sigma * sigma));
+        ksum += kernel[i];
+    }
+    for (let i = 0; i < size; i++) kernel[i] /= ksum;
+
+    const tmp = new Float32Array(width * height);
+    const dst = new Float32Array(width * height);
+
+    for (let y = 0; y < height; y++) {
+        const row = y * width;
+        for (let x = 0; x < width; x++) {
+            let acc = 0;
+            for (let k = -radius; k <= radius; k++) {
+                const xk = Math.min(Math.max(x + k, 0), width - 1);
+                acc += src[row + xk] * kernel[k + radius];
+            }
+            tmp[row + x] = acc;
+        }
+    }
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            let acc = 0;
+            for (let k = -radius; k <= radius; k++) {
+                const yk = Math.min(Math.max(y + k, 0), height - 1);
+                acc += tmp[yk * width + x] * kernel[k + radius];
+            }
+            dst[y * width + x] = acc;
+        }
+    }
+
+    return dst;
+}
+
+function removeBleeding(imageData) {
+    const { data, width, height } = imageData;
+    const n = width * height;
+
+    const gray = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+        gray[i] =
+            0.299 * data[i * 4] +
+            0.587 * data[i * 4 + 1] +
+            0.114 * data[i * 4 + 2];
+    }
+
+    const bg = _gaussianBlur(gray, width, height, 25);
+
+    const norm = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+        norm[i] = Math.min(255, Math.max(0, ((gray[i] + 1) / (bg[i] + 1)) * 255));
+    }
+
+    const denoised = _gaussianBlur(norm, width, height, 2);
+
+    const adaptSigma = (35 / 2 - 1) * 0.3 + 0.8;
+    const localMean  = _gaussianBlur(denoised, width, height, adaptSigma);
+
+    const out = new Uint8ClampedArray(n * 4);
+    for (let i = 0; i < n; i++) {
+        const v = denoised[i] > localMean[i] - 10 ? 255 : 0;
+        out[i * 4]     = v;
+        out[i * 4 + 1] = v;
+        out[i * 4 + 2] = v;
+        out[i * 4 + 3] = 255;
+    }
+
+    return new ImageData(out, width, height);
 }
