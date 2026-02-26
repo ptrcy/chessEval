@@ -99,9 +99,12 @@ body {
     display: flex;
     flex-direction: row;
     align-items: center;
+    justify-content: center;
     gap: var(--ctrl-gap);
     flex-shrink: 0;
-    flex-wrap: nowrap;
+    width: 100%;
+    max-width: 800px;
+    flex-wrap: wrap;
 }
 
 /* ─── Buttons ────────────────────────────────────────────────────────────── */
