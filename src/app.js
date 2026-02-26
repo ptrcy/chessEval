@@ -350,17 +350,15 @@ class MobileChess {
         this.showStatus('Processing image…', 'info');
 
         try {
-            const base64Data  = await this.compressImage(file);
-            this.showStatus('Cleaning image…', 'info');
-            const cleanedData = await this.applyRemoveBleeding(base64Data);
+            const base64Data = await this.compressImage(file);
 
-            const sizeKB = ((cleanedData.length - 22) * 3 / 4 / 1024).toFixed(1);
+            const sizeKB = ((base64Data.length - 22) * 3 / 4 / 1024).toFixed(1);
             this.showStatus(`Uploading (${sizeKB} KB)…`, 'info');
 
             const response = await fetch('/.netlify/functions/board-to-fen', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: cleanedData })
+                body: JSON.stringify({ image: base64Data })
             });
 
             if (!response.ok) throw new Error(`Server error: ${response.statusText}`);
@@ -416,23 +414,6 @@ class MobileChess {
         });
     }
 
-    applyRemoveBleeding(base64Data) {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.src = base64Data;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width  = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                ctx.putImageData(removeBleeding(ctx.getImageData(0, 0, canvas.width, canvas.height)), 0, 0);
-                resolve(canvas.toDataURL('image/png'));
-            };
-            img.onerror = (err) => reject(err);
-        });
-    }
-
     // ── Status toast ───────────────────────────────────────────────────────
 
     showStatus(message, type) {
@@ -452,75 +433,4 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => new MobileChess());
 } else {
     new MobileChess();
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Image pre-processing: remove bleed-through / uneven illumination
-// ─────────────────────────────────────────────────────────────────────────────
-
-function _gaussianBlur(src, width, height, sigma) {
-    const radius = Math.ceil(3 * sigma);
-    const size   = 2 * radius + 1;
-    const kernel = new Float32Array(size);
-    let ksum = 0;
-    for (let i = 0; i < size; i++) {
-        const x = i - radius;
-        kernel[i] = Math.exp(-(x * x) / (2 * sigma * sigma));
-        ksum += kernel[i];
-    }
-    for (let i = 0; i < size; i++) kernel[i] /= ksum;
-
-    const tmp = new Float32Array(width * height);
-    const dst = new Float32Array(width * height);
-
-    for (let y = 0; y < height; y++) {
-        const row = y * width;
-        for (let x = 0; x < width; x++) {
-            let acc = 0;
-            for (let k = -radius; k <= radius; k++) {
-                acc += src[row + Math.min(Math.max(x + k, 0), width - 1)] * kernel[k + radius];
-            }
-            tmp[row + x] = acc;
-        }
-    }
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            let acc = 0;
-            for (let k = -radius; k <= radius; k++) {
-                acc += tmp[Math.min(Math.max(y + k, 0), height - 1) * width + x] * kernel[k + radius];
-            }
-            dst[y * width + x] = acc;
-        }
-    }
-    return dst;
-}
-
-function removeBleeding(imageData) {
-    const { data, width, height } = imageData;
-    const n = width * height;
-
-    const gray = new Float32Array(n);
-    for (let i = 0; i < n; i++) {
-        gray[i] = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
-    }
-
-    const bg      = _gaussianBlur(gray, width, height, 25);
-    const norm    = new Float32Array(n);
-    const blendFactor = 0.5; // Controls how much we rely on the background subtraction
-    
-    for (let i = 0; i < n; i++) {
-        // Less aggressive normalization: mix the original grayscale with the normalized version
-        // so dark pieces don't get completely washed out into white context.
-        const normalizedValue = ((gray[i] + 1) / (bg[i] + 1)) * 255;
-        norm[i] = Math.min(255, Math.max(0, (normalizedValue * blendFactor) + (gray[i] * (1 - blendFactor))));
-    }
-
-    const denoised = _gaussianBlur(norm, width, height, 2);
-    const out      = new Uint8ClampedArray(n * 4);
-    for (let i = 0; i < n; i++) {
-        const v = Math.round(denoised[i]);
-        out[i * 4] = out[i * 4 + 1] = out[i * 4 + 2] = v;
-        out[i * 4 + 3] = 255;
-    }
-    return new ImageData(out, width, height);
 }
