@@ -12,11 +12,11 @@
     --success-color: #4caf50;
 
     /* Button / icon sizes — responsive via clamp */
-    --ctrl-size: clamp(44px, 6vmin, 64px);
-    --icon-size: clamp(22px, 3.5vmin, 32px);
+    --ctrl-size: clamp(44px, 6vmin, 56px);
+    --icon-size: clamp(22px, 3.5vmin, 28px);
 
     /* Gap between controls — grows with screen width, capped */
-    --ctrl-gap: clamp(6px, 1.6vw, 22px);
+    --ctrl-gap: clamp(6px, 1.6vw, 16px);
 }
 
 /* Very small phones: tighten further */

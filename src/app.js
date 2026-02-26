@@ -506,8 +506,13 @@ function removeBleeding(imageData) {
 
     const bg      = _gaussianBlur(gray, width, height, 25);
     const norm    = new Float32Array(n);
+    const blendFactor = 0.5; // Controls how much we rely on the background subtraction
+    
     for (let i = 0; i < n; i++) {
-        norm[i] = Math.min(255, Math.max(0, ((gray[i] + 1) / (bg[i] + 1)) * 255));
+        // Less aggressive normalization: mix the original grayscale with the normalized version
+        // so dark pieces don't get completely washed out into white context.
+        const normalizedValue = ((gray[i] + 1) / (bg[i] + 1)) * 255;
+        norm[i] = Math.min(255, Math.max(0, (normalizedValue * blendFactor) + (gray[i] * (1 - blendFactor))));
     }
 
     const denoised = _gaussianBlur(norm, width, height, 2);
