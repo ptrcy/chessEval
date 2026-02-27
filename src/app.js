@@ -350,7 +350,10 @@ class MobileChess {
         this.showStatus('Processing image…', 'info');
 
         try {
-            const base64Data = await this.compressImage(file);
+            const resizedBlob = await this.resizeImage(file);
+
+            this.showStatus('Removing bleed-through…', 'info');
+            const base64Data = await this.removeBleeding(resizedBlob);
 
             const sizeKB = ((base64Data.length - 22) * 3 / 4 / 1024).toFixed(1);
             this.showStatus(`Uploading (${sizeKB} KB)…`, 'info');
@@ -381,16 +384,8 @@ class MobileChess {
         }
     }
 
-    compressImage(file, maxWidth = 1024, quality = 0.7) {
+    resizeImage(file, maxSide = 520, quality = 0.85) {
         return new Promise((resolve, reject) => {
-            if (file.size < 300000) {
-                const reader = new FileReader();
-                reader.onload  = (e) => resolve(e.target.result);
-                reader.onerror = (e) => reject(e);
-                reader.readAsDataURL(file);
-                return;
-            }
-
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = (event) => {
@@ -398,20 +393,42 @@ class MobileChess {
                 img.src = event.target.result;
                 img.onload = () => {
                     let { width, height } = img;
-                    if (width > maxWidth) {
-                        height = Math.round(height * maxWidth / width);
-                        width  = maxWidth;
+                    if (width > maxSide || height > maxSide) {
+                        if (width >= height) {
+                            height = Math.round(height * maxSide / width);
+                            width  = maxSide;
+                        } else {
+                            width  = Math.round(width * maxSide / height);
+                            height = maxSide;
+                        }
                     }
                     const canvas = document.createElement('canvas');
                     canvas.width  = width;
                     canvas.height = height;
                     canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
+                    canvas.toBlob(blob => {
+                        if (blob) resolve(blob);
+                        else reject(new Error('Canvas toBlob failed'));
+                    }, 'image/jpeg', quality);
                 };
-                img.onerror = (err) => reject(err);
+                img.onerror = reject;
             };
-            reader.onerror = (err) => reject(err);
+            reader.onerror = reject;
         });
+    }
+
+    async removeBleeding(blob) {
+        const arrayBuffer = await blob.arrayBuffer();
+        const res = await fetch('https://rmbleeding.vercel.app/api/process', {
+            method: 'POST',
+            headers: { 'Content-Type': 'image/jpeg' },
+            body: arrayBuffer,
+        });
+        if (!res.ok) throw new Error(`rmbleeding API error: ${res.status}`);
+        const data = await res.json();
+        if (!data.image) throw new Error('No image in rmbleeding response');
+        const mime = data.format === 'png' ? 'image/png' : 'image/jpeg';
+        return `data:${mime};base64,${data.image}`;
     }
 
     // ── Status toast ───────────────────────────────────────────────────────
