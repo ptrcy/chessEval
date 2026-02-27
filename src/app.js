@@ -346,17 +346,19 @@ class MobileChess {
     async handleImageUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
+        if (this._processingImage) return;
+        this._processingImage = true;
 
-        this.showStatus('Processing image…', 'info');
+        this.showStatus('Processing image…', 'info', true);
 
         try {
             const resizedBlob = await this.resizeImage(file);
 
-            this.showStatus('Removing bleed-through…', 'info');
+            this.showStatus('Removing bleed-through…', 'info', true);
             const base64Data = await this.removeBleeding(resizedBlob);
 
             const sizeKB = ((base64Data.length - 22) * 3 / 4 / 1024).toFixed(1);
-            this.showStatus(`Uploading (${sizeKB} KB)…`, 'info');
+            this.showStatus(`Uploading (${sizeKB} KB)…`, 'info', true);
 
             const response = await fetch('/.netlify/functions/board-to-fen', {
                 method: 'POST',
@@ -380,6 +382,7 @@ class MobileChess {
             console.error('Image processing error:', error);
             this.showStatus(`Error: ${error.message}`, 'error');
         } finally {
+            this._processingImage = false;
             this.elements.cameraInput.value = '';
         }
     }
@@ -433,14 +436,16 @@ class MobileChess {
 
     // ── Status toast ───────────────────────────────────────────────────────
 
-    showStatus(message, type) {
+    showStatus(message, type, persist = false) {
         const el = this.elements.statusMessage;
         if (!el) return;
         el.textContent = message;
         el.className   = type;
         el.style.display = 'block';
         clearTimeout(this._statusTimer);
-        this._statusTimer = setTimeout(() => { el.style.display = 'none'; }, 3500);
+        if (!persist) {
+            this._statusTimer = setTimeout(() => { el.style.display = 'none'; }, 3500);
+        }
     }
 }
 
