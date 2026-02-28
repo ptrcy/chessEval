@@ -404,12 +404,10 @@ class MobileChess {
         if (this._processingImage) return;
         this._processingImage = true;
 
-        this.showStatus('Processing image…', 'info', true);
+        this.showStatus(this.settings.removeBleeding ? 'Removing bleed-through…' : 'Processing image…', 'info', true);
 
         try {
             const resizedBlob = await this.resizeImage(file);
-
-            this.showStatus(this.settings.removeBleeding ? 'Removing bleed-through…' : 'Processing image…', 'info', true);
             const base64Data = await this.removeBleeding(resizedBlob, this.settings.removeBleeding);
 
             const sizeKB = ((base64Data.length - 22) * 3 / 4 / 1024).toFixed(1);
@@ -476,13 +474,18 @@ class MobileChess {
     }
 
     async removeBleeding(blob, removeBleeding = true) {
+        if (!removeBleeding) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
         const arrayBuffer = await blob.arrayBuffer();
         const res = await fetch('https://rmbleeding.vercel.app/api/process', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'image/jpeg',
-                'X-Remove-Bleeding': removeBleeding.toString()
-            },
+            headers: { 'Content-Type': 'image/jpeg' },
             body: arrayBuffer,
         });
         if (!res.ok) throw new Error(`rmbleeding API error: ${res.status}`);
