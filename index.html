@@ -43,6 +43,14 @@
                 </svg>
             </button>
 
+            <!-- Settings button -->
+            <button id="settingsBtn" class="mobile-btn" title="Settings" aria-label="Settings">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M12 1v6m0 6v6M1 12h6m6 0h6M4.929 4.929l4.242 4.242m5.658 5.658l4.242 4.242M4.929 19.071l4.242-4.242m5.658-5.658l4.242-4.242" />
+                </svg>
+            </button>
+
             <!-- Button 3: Rotate FEN 180° — fixes wrong scan orientation -->
             <button id="rotateFenBtn" class="mobile-btn" title="Rotate Board 180° — fix scan orientation" aria-label="Rotate Board 180°">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -72,6 +80,29 @@
             <input type="text" id="fenInput">
             <input type="file" id="cameraInput" accept="image/*" capture="environment">
             <div id="statusMessage"></div>
+        </div>
+
+        <!-- Settings modal -->
+        <div id="settingsModal" class="settings-modal">
+            <div class="settings-content">
+                <div class="settings-header">
+                    <h2>Settings</h2>
+                    <button id="closeSettingsBtn" class="close-btn" aria-label="Close settings">
+                        <svg viewBox="0 0 24 24" width="24" height="24">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="settings-body">
+                    <label class="setting-item">
+                        <input type="checkbox" id="removeBleedingToggle">
+                        <span>Remove bleed-through from scanned images</span>
+                    </label>
+                    <p class="setting-description">
+                        When enabled, removes text/graphics from the back side of pages that show through in photos.
+                    </p>
+                </div>
+            </div>
         </div>
 
     </div>

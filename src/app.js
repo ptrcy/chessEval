@@ -22,6 +22,10 @@ class MobileChess {
         this.moveHistory = [];
         this.currentMoveIndex = -1;
 
+        this.settings = {
+            removeBleeding: true
+        };
+
         this.elements = {
             board:         document.getElementById('chessboard'),
             boardContainer:document.getElementById('boardContainer'),
@@ -34,7 +38,11 @@ class MobileChess {
             cameraBtn:     document.getElementById('cameraBtn'),
             cameraInput:   document.getElementById('cameraInput'),
             statusMessage: document.getElementById('statusMessage'),
-            evalDisplay:   document.getElementById('evalDisplay')
+            evalDisplay:   document.getElementById('evalDisplay'),
+            settingsBtn:   document.getElementById('settingsBtn'),
+            settingsModal: document.getElementById('settingsModal'),
+            closeSettingsBtn: document.getElementById('closeSettingsBtn'),
+            removeBleedingToggle: document.getElementById('removeBleedingToggle')
         };
 
         this.init();
@@ -42,6 +50,7 @@ class MobileChess {
 
     async init() {
         try {
+            this.initSettings();
             this.initBoard();
             this.engine = new StockfishEngine({ multiPv: 3, threads: 2 });
             await this.engine.init();
@@ -49,6 +58,52 @@ class MobileChess {
         } catch (error) {
             console.error('Mobile init error:', error);
         }
+    }
+
+    initSettings() {
+        // Load settings from localStorage
+        const saved = localStorage.getItem('chesseval_settings');
+        if (saved) {
+            try {
+                this.settings = { ...this.settings, ...JSON.parse(saved) };
+            } catch (e) {
+                console.error('Failed to parse settings:', e);
+            }
+        }
+
+        // Set initial toggle state
+        if (this.elements.removeBleedingToggle) {
+            this.elements.removeBleedingToggle.checked = this.settings.removeBleeding;
+
+            // Save setting when changed
+            this.elements.removeBleedingToggle.addEventListener('change', () => {
+                this.settings.removeBleeding = this.elements.removeBleedingToggle.checked;
+                this.saveSettings();
+            });
+        }
+
+        // Settings button
+        this.elements.settingsBtn?.addEventListener('click', () => this.openSettings());
+        this.elements.closeSettingsBtn?.addEventListener('click', () => this.closeSettings());
+
+        // Close modal on backdrop click
+        this.elements.settingsModal?.addEventListener('click', (e) => {
+            if (e.target === this.elements.settingsModal) {
+                this.closeSettings();
+            }
+        });
+    }
+
+    saveSettings() {
+        localStorage.setItem('chesseval_settings', JSON.stringify(this.settings));
+    }
+
+    openSettings() {
+        this.elements.settingsModal?.classList.add('active');
+    }
+
+    closeSettings() {
+        this.elements.settingsModal?.classList.remove('active');
     }
 
     initBoard() {
@@ -354,8 +409,8 @@ class MobileChess {
         try {
             const resizedBlob = await this.resizeImage(file);
 
-            this.showStatus('Removing bleed-through…', 'info', true);
-            const base64Data = await this.removeBleeding(resizedBlob);
+            this.showStatus(this.settings.removeBleeding ? 'Removing bleed-through…' : 'Processing image…', 'info', true);
+            const base64Data = await this.removeBleeding(resizedBlob, this.settings.removeBleeding);
 
             const sizeKB = ((base64Data.length - 22) * 3 / 4 / 1024).toFixed(1);
             this.showStatus(`Uploading (${sizeKB} KB)…`, 'info', true);
@@ -420,11 +475,14 @@ class MobileChess {
         });
     }
 
-    async removeBleeding(blob) {
+    async removeBleeding(blob, removeBleeding = true) {
         const arrayBuffer = await blob.arrayBuffer();
         const res = await fetch('https://rmbleeding.vercel.app/api/process', {
             method: 'POST',
-            headers: { 'Content-Type': 'image/jpeg' },
+            headers: {
+                'Content-Type': 'image/jpeg',
+                'X-Remove-Bleeding': removeBleeding.toString()
+            },
             body: arrayBuffer,
         });
         if (!res.ok) throw new Error(`rmbleeding API error: ${res.status}`);
