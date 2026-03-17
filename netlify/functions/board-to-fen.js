@@ -35,28 +35,9 @@ export const handler = async (event) => {
       return { statusCode: 422, body: JSON.stringify({ error: 'Could not detect board' }) };
     }
 
-    // Ensure FEN has all 6 fields
+    // Ensure FEN has all 6 fields (castling rights are inferred client-side
+    // after orientation detection, so we leave them as '-' here).
     if (fen.split(' ').length < 6) fen += ' w - - 0 1';
-
-    // --- Optimistic castling rights ---
-    // Infer castling availability from king/rook starting squares.
-    const fenParts = fen.split(' ');
-    const ranks    = fenParts[0].split('/');
-    const expand   = (s) => s.replace(/\d/g, (d) => '1'.repeat(parseInt(d, 10)));
-    const r8 = expand(ranks[0]); // rank 8 (black back rank)
-    const r1 = expand(ranks[7]); // rank 1 (white back rank)
-
-    let castling = '';
-    if (r1[4] === 'K') {
-      if (r1[7] === 'R') castling += 'K';
-      if (r1[0] === 'R') castling += 'Q';
-    }
-    if (r8[4] === 'k') {
-      if (r8[7] === 'r') castling += 'k';
-      if (r8[0] === 'r') castling += 'q';
-    }
-    fenParts[2] = castling || '-';
-    fen = fenParts.join(' ');
 
     console.log('board-to-fen: returning FEN:', fen);
     return { statusCode: 200, body: JSON.stringify({ fen }) };

@@ -5,7 +5,7 @@
 import { Chess } from 'chess.js';
 import { Chessground } from 'chessground';
 import { StockfishEngine } from './engine.js';
-import { rotateFen } from './utils/fen.js';
+import { rotateFen, inferCastlingRights } from './utils/fen.js';
 import './app.css';
 
 const DEFAULT_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -425,7 +425,7 @@ class MobileChess {
             if (data.error) throw new Error(data.error);
             if (!data.fen)  throw new Error('No FEN returned');
 
-            const fen = this.detectOrientation(data.fen);
+            const fen = inferCastlingRights(this.detectOrientation(data.fen));
             console.log('FEN from API:', data.fen);
             console.log('FEN after orientation check:', fen);
             this.loadPosition(fen, 'white');
