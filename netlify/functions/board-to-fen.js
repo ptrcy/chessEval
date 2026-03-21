@@ -35,9 +35,14 @@ export const handler = async (event) => {
       return { statusCode: 422, body: JSON.stringify({ error: 'Could not detect board' }) };
     }
 
-    // Ensure FEN has all 6 fields (castling rights are inferred client-side
-    // after orientation detection, so we leave them as '-' here).
-    if (fen.split(' ').length < 6) fen += ' w - - 0 1';
+    // Ensure FEN has all 6 fields and no extra spaces.
+    const parts = fen.trim().split(/\s+/);
+    if (parts.length < 2) parts.push('w');
+    if (parts.length < 3) parts.push('-');
+    if (parts.length < 4) parts.push('-');
+    if (parts.length < 5) parts.push('0');
+    if (parts.length < 6) parts.push('1');
+    fen = parts.slice(0, 6).join(' ');
 
     console.log('board-to-fen: returning FEN:', fen);
     return { statusCode: 200, body: JSON.stringify({ fen }) };

@@ -57,6 +57,7 @@ class MobileChess {
             this.runAnalysis();
         } catch (error) {
             console.error('Mobile init error:', error);
+            this.showStatus('Engine Error: Failed to initialize Stockfish. Analysis will be unavailable.', 'error', true);
         }
     }
 
@@ -228,6 +229,12 @@ class MobileChess {
         if (labelOverride) { el.textContent = labelOverride; return; }
         if (!result)       { el.textContent = '--'; return; }
 
+        if (result.error) {
+            el.textContent = 'Err';
+            console.error('Analysis error:', result.error);
+            return;
+        }
+
         let text = '--';
         if (typeof result.mate === 'number') {
             text = result.mate > 0 ? `#${result.mate}` : `#-${Math.abs(result.mate)}`;
@@ -250,6 +257,13 @@ class MobileChess {
         const analysisFen = this.chess.fen();
         this.engine.analyze(analysisFen, 15, (result) => {
             if (this.chess.fen() !== analysisFen) return;
+            
+            if (result.error) {
+                this.updateEvalDisplay(result);
+                this.showStatus(`Analysis failed: ${result.error}`, 'error');
+                return;
+            }
+
             this.updateEvalDisplay(result);
             if (result.moves?.length > 0) this.showMoveArrows(result.moves.slice(0, 3));
         });
@@ -355,16 +369,18 @@ class MobileChess {
      *   bottom half (both > 65 %), the board is likely flipped.
      */
     detectOrientation(fen) {
-        const rows = fen.split(' ')[0].split('/');
+        const parts = fen.trim().split(/\s+/);
+        const rows = parts[0].split('/');
         const whiteKingRow = rows.findIndex(r => r.includes('K'));
         const blackKingRow = rows.findIndex(r => r.includes('k'));
 
         let isFlipped = false;
+        let bottomColor = 'white';
 
         if (whiteKingRow !== -1 || blackKingRow !== -1) {
             let score = 0;
-            if (whiteKingRow !== -1) score += (3.5 - whiteKingRow); // positive if king is in top half
-            if (blackKingRow !== -1) score += (blackKingRow - 3.5); // positive if king is in bottom half
+            if (whiteKingRow !== -1) score += (3.5 - whiteKingRow); // positive if white king is in top half
+            if (blackKingRow !== -1) score += (blackKingRow - 3.5); // positive if black king is in bottom half
             isFlipped = score > 1.5;
             console.log(`Orientation — king score: ${score.toFixed(2)} → ${isFlipped ? 'FLIPPED' : 'normal'}`);
         } else {
@@ -378,14 +394,27 @@ class MobileChess {
             console.log(`Orientation — piece-distribution fallback → ${isFlipped ? 'FLIPPED' : 'normal'}`);
         }
 
-        return isFlipped ? rotateFen(fen) : fen;
+        // If flipped, it means Black was at the bottom in the image.
+        // We rotate the FEN to fix coordinates, then set turn to Black.
+        if (isFlipped) {
+            fen = rotateFen(fen);
+            bottomColor = 'black';
+        }
+
+        // Set turn in FEN to match the bottom player
+        const finalParts = fen.trim().split(/\s+/);
+        finalParts[1] = bottomColor === 'white' ? 'w' : 'b';
+        
+        return { 
+            fen: finalParts.join(' '), 
+            bottomColor 
+        };
     }
 
     // ── Position loading ───────────────────────────────────────────────────
 
     loadPosition(fen, orientation) {
         try {
-            if (fen.split(' ').length < 6) fen += ' w - - 0 1';
             this.chess.load(fen);
             this.moveHistory = [];
             this.currentMoveIndex = -1;
@@ -425,10 +454,14 @@ class MobileChess {
             if (data.error) throw new Error(data.error);
             if (!data.fen)  throw new Error('No FEN returned');
 
-            const fen = inferCastlingRights(this.detectOrientation(data.fen));
+            const { fen: detectedFen, bottomColor } = this.detectOrientation(data.fen);
+            const finalFen = inferCastlingRights(detectedFen);
+            
             console.log('FEN from API:', data.fen);
-            console.log('FEN after orientation check:', fen);
-            this.loadPosition(fen, 'white');
+            console.log('FEN after detection/inference:', finalFen);
+            console.log('Detected bottom color:', bottomColor);
+            
+            this.loadPosition(finalFen, bottomColor);
             this.showStatus('Board detected — adjust turn / orientation if needed', 'success');
 
         } catch (error) {

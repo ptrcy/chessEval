@@ -12,13 +12,18 @@
  */
 export function inferCastlingRights(fen) {
     if (!fen) return fen;
-    const parts  = fen.split(' ');
+    const parts  = fen.trim().split(/\s+/);
+    if (parts.length < 3) return fen; // Not enough parts to modify castling
+
     const ranks  = parts[0].split('/');
+    if (ranks.length < 8) return fen; // Incomplete piece string
+
     const expand = (s) => s.replace(/\d/g, (d) => '1'.repeat(parseInt(d, 10)));
     const r8 = expand(ranks[0]); // rank 8 (black back rank)
     const r1 = expand(ranks[7]); // rank 1 (white back rank)
 
     let castling = '';
+    // Kingside: index 7 (file h); Queenside: index 0 (file a)
     if (r1[4] === 'K') {
         if (r1[7] === 'R') castling += 'K';
         if (r1[0] === 'R') castling += 'Q';
@@ -44,7 +49,7 @@ export function inferCastlingRights(fen) {
 export function rotateFen(fen) {
     if (!fen) return fen;
     
-    const parts = fen.split(' ');
+    const parts = fen.trim().split(/\s+/);
     const rows = parts[0].split('/');
 
     const reversedRows = rows.map(row => {

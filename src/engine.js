@@ -41,20 +41,29 @@ export class StockfishEngine {
                 // Initialize the worker
                 this.worker.postMessage({ type: 'init' });
 
-                // Wait for uciok
-                const checkReady = (e) => {
-                    if (e.data.type === 'output' && e.data.data === 'uciok') {
-                        this.worker.removeEventListener('message', checkReady);
-                        this.sendCommand(`setoption name MultiPV value ${this.options.multiPv}`);
-                        this.sendCommand(`setoption name Threads value ${this.options.threads}`);
-                        this.sendCommand('isready');
-                        setTimeout(() => resolve(), 500);
-                    } else if (e.data.type === 'error') {
-                        reject(new Error(e.data.data));
+                // UCI flow: uci -> uciok -> [options] -> isready -> readyok
+                const onMessage = (e) => {
+                    const { type, data } = e.data;
+
+                    if (type === 'error') {
+                        this.worker.removeEventListener('message', onMessage);
+                        reject(new Error(data));
+                        return;
+                    }
+
+                    if (type === 'output') {
+                        if (data === 'uciok') {
+                            this.sendCommand(`setoption name MultiPV value ${this.options.multiPv}`);
+                            this.sendCommand(`setoption name Threads value ${this.options.threads}`);
+                            this.sendCommand('isready');
+                        } else if (data === 'readyok') {
+                            this.worker.removeEventListener('message', onMessage);
+                            resolve();
+                        }
                     }
                 };
 
-                this.worker.addEventListener('message', checkReady);
+                this.worker.addEventListener('message', onMessage);
 
             } catch (error) {
                 reject(error);
