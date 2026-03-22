@@ -75,6 +75,15 @@ class MobileChess {
                 this.elements.promotionModal.classList.remove('active');
             });
         });
+
+        // Cancel promotion on backdrop click — snap piece back
+        this.elements.promotionModal?.addEventListener('click', (e) => {
+            if (e.target === this.elements.promotionModal) {
+                this._pendingMove = null;
+                this.elements.promotionModal.classList.remove('active');
+                this.board.set({ fen: this.chess.fen() });
+            }
+        });
     }
 
     initSettings() {
@@ -156,6 +165,10 @@ class MobileChess {
 
         this.elements.cameraBtn?.addEventListener('click', () => this.elements.cameraInput.click());
         this.elements.cameraInput?.addEventListener('change', (e) => this.handleImageUpload(e));
+
+        this.elements.fenInput?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') this.loadPosition(this.elements.fenInput.value.trim());
+        });
 
         window.addEventListener('resize', () => this.board?.redrawAll());
         setTimeout(() => this.board?.redrawAll(), 100);
@@ -363,6 +376,7 @@ class MobileChess {
 
         const next = () => {
             if (generation !== this.arrowAnimationGeneration) return;
+            if (arrows.length === 0) return;
             if (idx < arrows.length) {
                 visible.push(arrows[idx++]);
                 this.board.setShapes(visible);
@@ -512,9 +526,8 @@ class MobileChess {
         if (this._processingImage) return;
         this._processingImage = true;
 
-        this.showStatus(this.settings.removeBleeding ? 'Removing bleed-through…' : 'Processing image…', 'info', true);
-
         try {
+            this.showStatus(this.settings.removeBleeding ? 'Removing bleed-through…' : 'Processing image…', 'info', true);
             const resizedBlob = await this.resizeImage(file);
             const base64Data = await this.removeBleeding(resizedBlob, this.settings.removeBleeding);
 
@@ -585,8 +598,8 @@ class MobileChess {
         });
     }
 
-    async removeBleeding(blob, removeBleeding = true) {
-        if (!removeBleeding) {
+    async removeBleeding(blob, enabled = true) {
+        if (!enabled) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = () => resolve(reader.result);
@@ -613,7 +626,7 @@ class MobileChess {
         const el = this.elements.statusMessage;
         if (!el) return;
         el.textContent = message;
-        el.className   = type;
+        el.className   = type || '';
         el.style.display = 'block';
         clearTimeout(this._statusTimer);
         if (!persist) {

@@ -63,6 +63,8 @@ export function rotateFen(fen) {
 
     // Reconstruct FEN
     parts[0] = reversedRows.join('/');
-    
+    // En-passant target square is invalidated by rotation
+    if (parts.length > 3) parts[3] = '-';
+
     return parts.join(' ');
 }

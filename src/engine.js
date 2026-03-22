@@ -6,12 +6,11 @@
 export class StockfishEngine {
     constructor(options = {}) {
         this.worker = null;
-        this.isAnalyzing = false;
         this.analysisCallback = null;
+        this._ignoreNextBestmove = false;
         this.options = {
-            multiPv: options.multiPv || 3,
-            threads: options.threads || 2,
-            ...options
+            multiPv: options.multiPv ?? 3,
+            threads: options.threads ?? 2,
         };
         this.currentAnalysis = {
             score: null,
@@ -32,7 +31,6 @@ export class StockfishEngine {
                     { type: 'module' }
                 );
 
-                this.worker.onmessage = (e) => this.handleMessage(e);
                 this.worker.onerror = (error) => {
                     console.error('Worker error:', error);
                     reject(error);
@@ -58,6 +56,7 @@ export class StockfishEngine {
                             this.sendCommand('isready');
                         } else if (data === 'readyok') {
                             this.worker.removeEventListener('message', onMessage);
+                            this.worker.onmessage = (e) => this.handleMessage(e);
                             resolve();
                         }
                     }
@@ -151,6 +150,10 @@ export class StockfishEngine {
 
         // When analysis completes at target depth, send callback
         if (line.startsWith('bestmove')) {
+            if (this._ignoreNextBestmove) {
+                this._ignoreNextBestmove = false;
+                return;
+            }
             if (this.analysisCallback && this.currentAnalysis.moves.length > 0) {
                 this.analysisCallback({
                     ...this.currentAnalysis,
@@ -176,7 +179,6 @@ export class StockfishEngine {
      * @param {function} callback - Callback for analysis results
      */
     analyze(fen, depth = 15, callback) {
-        this.isAnalyzing = true;
         this.analysisCallback = callback;
         this.currentAnalysis = {
             score: null,
@@ -193,7 +195,7 @@ export class StockfishEngine {
      * Stop current analysis
      */
     stop() {
-        this.isAnalyzing = false;
+        this._ignoreNextBestmove = true;
         this.analysisCallback = null;
         if (this.worker) {
             this.worker.postMessage({ type: 'stop' });
