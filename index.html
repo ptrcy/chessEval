@@ -51,17 +51,12 @@
                 </svg>
             </button>
 
-            <!-- Button 3: Rotate FEN 180° — fixes wrong scan orientation -->
-            <button id="rotateFenBtn" class="mobile-btn" title="Rotate Board 180° — fix scan orientation" aria-label="Rotate Board 180°">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                </svg>
-            </button>
-
             <!-- Button 2: Flip board perspective (visual only) -->
             <button id="flipBtn" class="mobile-btn" title="Flip Board Perspective" aria-label="Flip Perspective">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M4.5 15.75l3 3 3-3M7.5 18.75V5.25M19.5 8.25l-3-3-3 3M16.5 5.25v13.5" />
+                    <!-- Eye icon for perspective -->
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
                 </svg>
             </button>
 
@@ -84,29 +79,20 @@
 
         <!-- Settings modal -->
         <div id="settingsModal" class="settings-modal">
-            <div class="settings-content">
-                <div class="settings-header">
-                    <h2>Settings</h2>
-                    <button id="closeSettingsBtn" class="close-btn" aria-label="Close settings">
-                        <svg viewBox="0 0 24 24" width="24" height="24">
-                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="settings-body">
-                    <label class="setting-item">
-                        <input type="checkbox" id="removeBleedingToggle">
-                        <span>Remove bleed-through from scanned images</span>
-                    </label>
-                    <p class="setting-description">
-                        When enabled, removes text/graphics from the back side of pages that show through in photos.
-                    </p>
-                </div>
+            <!-- ... (settings content) ... -->
+        </div>
+
+        <!-- Promotion Modal -->
+        <div id="promotionModal" class="promotion-modal">
+            <div class="promotion-content">
+                <button class="promotion-piece" data-piece="q">♕</button>
+                <button class="promotion-piece" data-piece="r">♖</button>
+                <button class="promotion-piece" data-piece="b">♗</button>
+                <button class="promotion-piece" data-piece="n">♘</button>
             </div>
         </div>
 
-    </div>
-
+        </div>
     <script type="module" src="/src/app.js"></script>
 </body>
 </html>

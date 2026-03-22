@@ -127,8 +127,12 @@ export class StockfishEngine {
                     }
 
                     // Update analysis data
-                    if (multiPv === 1) {
+                    if (depth > this.currentAnalysis.depth) {
                         this.currentAnalysis.depth = depth;
+                        this.currentAnalysis.moves = [];
+                    }
+
+                    if (multiPv === 1) {
                         this.currentAnalysis.score = score;
                         this.currentAnalysis.mate = mate;
                     }

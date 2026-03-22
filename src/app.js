@@ -42,9 +42,12 @@ class MobileChess {
             settingsBtn:   document.getElementById('settingsBtn'),
             settingsModal: document.getElementById('settingsModal'),
             closeSettingsBtn: document.getElementById('closeSettingsBtn'),
-            removeBleedingToggle: document.getElementById('removeBleedingToggle')
+            removeBleedingToggle: document.getElementById('removeBleedingToggle'),
+            promotionModal: document.getElementById('promotionModal'),
+            promotionPieces: document.querySelectorAll('.promotion-piece')
         };
 
+        this._pendingMove = null;
         this.init();
     }
 
@@ -52,6 +55,7 @@ class MobileChess {
         try {
             this.initSettings();
             this.initBoard();
+            this.initPromotion();
             this.engine = new StockfishEngine({ multiPv: 3, threads: 2 });
             await this.engine.init();
             this.runAnalysis();
@@ -59,6 +63,18 @@ class MobileChess {
             console.error('Mobile init error:', error);
             this.showStatus('Engine Error: Failed to initialize Stockfish. Analysis will be unavailable.', 'error', true);
         }
+    }
+
+    initPromotion() {
+        this.elements.promotionPieces.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const piece = btn.getAttribute('data-piece');
+                if (this._pendingMove) {
+                    this.completeMove(this._pendingMove.orig, this._pendingMove.dest, piece);
+                }
+                this.elements.promotionModal.classList.remove('active');
+            });
+        });
     }
 
     initSettings() {
@@ -148,31 +164,66 @@ class MobileChess {
     // ── Move handling ──────────────────────────────────────────────────────
 
     onMove(orig, dest) {
-        const move = this.chess.move({ from: orig, to: dest, promotion: 'q' });
-        if (move) {
-            if (this.currentMoveIndex < this.moveHistory.length - 1) {
-                this.moveHistory = this.moveHistory.slice(0, this.currentMoveIndex + 1);
+        // Detect promotion
+        const piece = this.chess.get(orig);
+        const isPromotion = piece?.type === 'p' && 
+            ((piece.color === 'w' && dest[1] === '8') || 
+             (piece.color === 'b' && dest[1] === '1'));
+
+        if (isPromotion) {
+            this._pendingMove = { orig, dest };
+            this.elements.promotionModal.classList.add('active');
+            return;
+        }
+
+        this.completeMove(orig, dest);
+    }
+
+    completeMove(orig, dest, promotion = 'q') {
+        try {
+            const move = this.chess.move({ from: orig, to: dest, promotion });
+            if (move) {
+                if (this.currentMoveIndex < this.moveHistory.length - 1) {
+                    this.moveHistory = this.moveHistory.slice(0, this.currentMoveIndex + 1);
+                }
+                this.moveHistory.push(move);
+                this.currentMoveIndex++;
+                this.updateBoardState();
+            } else {
+                // Illegal move, snap back
+                this.board.set({ fen: this.chess.fen() });
             }
-            this.moveHistory.push(move);
-            this.currentMoveIndex++;
-            this.updateBoardState();
-        } else {
+        } catch (e) {
+            console.error('Move error:', e);
             this.board.set({ fen: this.chess.fen() });
         }
+        this._pendingMove = null;
     }
 
     updateBoardState(orientation) {
+        const isGameOver = this.chess.isGameOver();
         const config = {
             fen: this.chess.fen(),
             turnColor: this.chess.turn() === 'w' ? 'white' : 'black',
-            movable: { color: 'both', dests: this.getMoveDests() },
+            movable: { 
+                color: 'both', 
+                free: false,
+                dests: isGameOver ? new Map() : this.getMoveDests(),
+                events: {
+                    after: (orig, dest) => this.onMove(orig, dest)
+                }
+            },
             lastMove: this.currentMoveIndex >= 0
                 ? [this.moveHistory[this.currentMoveIndex].from,
                    this.moveHistory[this.currentMoveIndex].to]
                 : undefined
         };
         if (orientation) config.orientation = orientation;
+        
         this.board.set(config);
+        
+        // Ensure visual sync on mobile
+        this.board.redrawAll();
 
         this.updateTurnIndicator();
         this.updateButtons();
@@ -182,10 +233,14 @@ class MobileChess {
 
     getMoveDests() {
         const dests = new Map();
-        this.chess.moves({ verbose: true }).forEach(m => {
-            if (!dests.has(m.from)) dests.set(m.from, []);
-            dests.get(m.from).push(m.to);
-        });
+        try {
+            this.chess.moves({ verbose: true }).forEach(m => {
+                if (!dests.has(m.from)) dests.set(m.from, []);
+                dests.get(m.from).push(m.to);
+            });
+        } catch (e) {
+            console.error('Error getting move dests:', e);
+        }
         return dests;
     }
 
@@ -193,6 +248,7 @@ class MobileChess {
 
     updateTurnIndicator() {
         const isWhite = this.chess.turn() === 'w';
+        const isGameOver = this.chess.isGameOver();
 
         // Board border colour
         this.elements.boardContainer.className =
@@ -203,8 +259,12 @@ class MobileChess {
         if (btn) {
             // White piece: near-white fill; Black piece: near-black fill
             btn.style.setProperty('--turn-fill', isWhite ? '#f0f0f0' : '#1a1a1a');
-            btn.title      = isWhite ? 'White to move — tap to toggle' : 'Black to move — tap to toggle';
-            btn.setAttribute('aria-label', isWhite ? 'White to move' : 'Black to move');
+            
+            let title = isWhite ? 'White to move' : 'Black to move';
+            if (isGameOver) title = 'Game over';
+            
+            btn.title = `${title} — tap to toggle`;
+            btn.setAttribute('aria-label', title);
         }
     }
 
@@ -227,7 +287,17 @@ class MobileChess {
         if (!el) return;
 
         if (labelOverride) { el.textContent = labelOverride; return; }
-        if (!result)       { el.textContent = '--'; return; }
+        
+        if (this.chess.isGameOver()) {
+            if (this.chess.isCheckmate()) {
+                el.textContent = this.chess.turn() === 'w' ? '0-1' : '1-0';
+            } else {
+                el.textContent = '½-½';
+            }
+            return;
+        }
+
+        if (!result) { el.textContent = '--'; return; }
 
         if (result.error) {
             el.textContent = 'Err';
@@ -249,7 +319,10 @@ class MobileChess {
 
     runAnalysis() {
         if (!this.engine) return;
-        if (this.chess.isGameOver()) { this.updateEvalDisplay(null, 'Game over'); return; }
+        if (this.chess.isGameOver()) { 
+            this.updateEvalDisplay(); 
+            return; 
+        }
 
         this.engine.stop();
         this.updateEvalDisplay(null, '...');
@@ -349,6 +422,7 @@ class MobileChess {
     /** Button 3: rotate FEN 180° — corrects a wrong scan orientation */
     rotateBoardLogic() {
         this.loadPosition(rotateFen(this.chess.fen()));
+        this.closeSettings();
     }
 
     // ── Orientation detection ──────────────────────────────────────────────
@@ -415,13 +489,18 @@ class MobileChess {
 
     loadPosition(fen, orientation) {
         try {
-            this.chess.load(fen);
+            const success = this.chess.load(fen);
+            if (!success) {
+                console.error('chess.js failed to load FEN:', fen);
+                this.showStatus('Invalid or illegal position', 'error');
+                return;
+            }
             this.moveHistory = [];
             this.currentMoveIndex = -1;
             this.updateBoardState(orientation);
         } catch (e) {
             console.error('loadPosition error:', e);
-            this.showStatus('Invalid FEN', 'error');
+            this.showStatus('Error loading position', 'error');
         }
     }
 
