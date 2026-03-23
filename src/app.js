@@ -560,7 +560,8 @@ class MobileChess {
 
         } catch (error) {
             console.error('Image processing error:', error);
-            this.showStatus(`Error: ${error.message}`, 'error');
+            const msg = error instanceof Error ? error.message : (error.type || String(error));
+            this.showStatus(`Error: ${msg}`, 'error');
         } finally {
             this._processingImage = false;
             this.elements.cameraInput.value = '';
@@ -594,9 +595,9 @@ class MobileChess {
                         else reject(new Error('Canvas toBlob failed'));
                     }, 'image/jpeg', quality);
                 };
-                img.onerror = reject;
+                img.onerror = () => reject(new Error('Failed to load image for resizing'));
             };
-            reader.onerror = reject;
+            reader.onerror = () => reject(new Error('Failed to read file'));
         });
     }
 
