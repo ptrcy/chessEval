@@ -319,10 +319,12 @@ class MobileChess {
         }
 
         let text = '--';
+        const isBlack = this.chess.turn() === 'b';
         if (typeof result.mate === 'number') {
-            text = result.mate > 0 ? `#${result.mate}` : `#-${Math.abs(result.mate)}`;
+            const m = isBlack ? -result.mate : result.mate;
+            text = m > 0 ? `#${m}` : `#-${Math.abs(m)}`;
         } else if (typeof result.score === 'number') {
-            const cp = result.score / 100;
+            const cp = (isBlack ? -result.score : result.score) / 100;
             text = `${cp > 0 ? '+' : ''}${cp.toFixed(2)}`;
         }
         el.textContent = text;
@@ -435,7 +437,7 @@ class MobileChess {
 
     /** Button 3: rotate FEN 180° — corrects a wrong scan orientation */
     rotateBoardLogic() {
-        this.loadPosition(rotateFen(this.chess.fen()));
+        this.loadPosition(inferCastlingRights(rotateFen(this.chess.fen())));
         this.closeSettings();
     }
 
