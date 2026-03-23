@@ -334,9 +334,9 @@ class MobileChess {
 
     runAnalysis() {
         if (!this.engine) return;
-        if (this.chess.isGameOver()) { 
-            this.updateEvalDisplay(); 
-            return; 
+        if (this.chess.isGameOver()) {
+            this.updateEvalDisplay();
+            return;
         }
 
         this.engine.stop();
@@ -345,7 +345,7 @@ class MobileChess {
         const analysisFen = this.chess.fen();
         this.engine.analyze(analysisFen, 15, (result) => {
             if (this.chess.fen() !== analysisFen) return;
-            
+
             if (result.error) {
                 this.updateEvalDisplay(result);
                 this.showStatus(`Analysis failed: ${result.error}`, 'error');
@@ -505,7 +505,14 @@ class MobileChess {
 
     loadPosition(fen, orientation) {
         try {
-            this.chess.load(fen);
+            const success = this.chess.load(fen);
+
+            if (!success) {
+                console.error('chess.js.load() returned false for FEN:', fen);
+                this.showStatus('Invalid or illegal position', 'error');
+                return;
+            }
+
             this.moveHistory = [];
             this.currentMoveIndex = -1;
             this.updateBoardState(orientation);

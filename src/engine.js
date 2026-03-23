@@ -179,6 +179,9 @@ export class StockfishEngine {
      * @param {function} callback - Callback for analysis results
      */
     analyze(fen, depth = 15, callback) {
+        // Reset ignore flag when starting new analysis
+        this._ignoreNextBestmove = false;
+
         this.analysisCallback = callback;
         this.currentAnalysis = {
             score: null,
