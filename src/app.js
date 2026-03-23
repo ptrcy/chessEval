@@ -505,14 +505,7 @@ class MobileChess {
 
     loadPosition(fen, orientation) {
         try {
-            const success = this.chess.load(fen);
-
-            if (!success) {
-                console.error('chess.js.load() returned false for FEN:', fen);
-                this.showStatus('Invalid or illegal position', 'error');
-                return;
-            }
-
+            this.chess.load(fen);
             this.moveHistory = [];
             this.currentMoveIndex = -1;
             this.updateBoardState(orientation);
