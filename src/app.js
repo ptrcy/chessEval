@@ -376,8 +376,12 @@ class MobileChess {
             this.updateEvalDisplay(result);
             if (result.moves?.length > 0) {
                 const top = result.moves.slice(0, 3);
-                if (this.settings.singleMove) this.showSingleMoveArrow(this.pickMove(top));
-                else this.showMoveArrows(top);
+                const good = this.getGoodMoves(top);
+                if (this.settings.singleMove) {
+                    this.showSingleMoveArrow(good[Math.floor(Math.random() * good.length)]);
+                } else {
+                    this.showMoveArrows(good);
+                }
             }
         });
     }
@@ -385,23 +389,20 @@ class MobileChess {
     // ── Arrows ─────────────────────────────────────────────────────────────
 
     /**
-     * Pick one of the top moves at random, among those whose eval is within
-     * the threshold of the best move. Scores are from the side to move's view.
-     *   #1, #2, #3 all within threshold of #1 → random of 3
-     *   only #2 within threshold             → random of #1/#2
-     *   otherwise (or #1 is a forced mate)   → #1
+     * Return the top moves whose eval is within the margin of the best move.
+     * Scores are from the side to move's view.
+     *   #1, #2, #3 all within margin of #1 → [#1, #2, #3]
+     *   only #2 within margin              → [#1, #2]
+     *   otherwise (or #1 is a forced mate) → [#1]
      */
-    pickMove(moves) {
+    getGoodMoves(moves) {
         const best = moves[0];
-        if (typeof best.score !== 'number') return best; // mate or unknown → play best
+        if (typeof best.score !== 'number') return [best]; // mate or unknown → best only
         const threshold = this.settings.singleMoveThreshold;
         const close = (m) => m && typeof m.score === 'number' && best.score - m.score <= threshold;
 
-        let candidates = [best];
-        if (close(moves[1])) {
-            candidates = close(moves[2]) ? moves.slice(0, 3) : moves.slice(0, 2);
-        }
-        return candidates[Math.floor(Math.random() * candidates.length)];
+        if (!close(moves[1])) return [best];
+        return close(moves[2]) ? moves.slice(0, 3) : moves.slice(0, 2);
     }
 
     showSingleMoveArrow({ move }) {
