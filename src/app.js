@@ -23,7 +23,9 @@ class MobileChess {
         this.currentMoveIndex = -1;
 
         this.settings = {
-            removeBleeding: true
+            removeBleeding: true,
+            singleMove: false,
+            singleMoveThreshold: 100   // centipawns
         };
 
         this.elements = {
@@ -43,6 +45,8 @@ class MobileChess {
             settingsModal: document.getElementById('settingsModal'),
             closeSettingsBtn: document.getElementById('closeSettingsBtn'),
             removeBleedingToggle: document.getElementById('removeBleedingToggle'),
+            singleMoveToggle: document.getElementById('singleMoveToggle'),
+            singleMoveThreshold: document.getElementById('singleMoveThreshold'),
             promotionModal: document.getElementById('promotionModal'),
             promotionPieces: document.querySelectorAll('.promotion-piece')
         };
@@ -105,6 +109,23 @@ class MobileChess {
             this.elements.removeBleedingToggle.addEventListener('change', () => {
                 this.settings.removeBleeding = this.elements.removeBleedingToggle.checked;
                 this.saveSettings();
+            });
+        }
+
+        if (this.elements.singleMoveToggle) {
+            this.elements.singleMoveToggle.checked = this.settings.singleMove;
+            this.elements.singleMoveToggle.addEventListener('change', () => {
+                this.settings.singleMove = this.elements.singleMoveToggle.checked;
+                this.saveSettings();
+                this.runAnalysis();
+            });
+        }
+        if (this.elements.singleMoveThreshold) {
+            this.elements.singleMoveThreshold.value = String(this.settings.singleMoveThreshold);
+            this.elements.singleMoveThreshold.addEventListener('change', () => {
+                this.settings.singleMoveThreshold = parseInt(this.elements.singleMoveThreshold.value, 10) || 100;
+                this.saveSettings();
+                this.runAnalysis();
             });
         }
 
@@ -353,11 +374,42 @@ class MobileChess {
             }
 
             this.updateEvalDisplay(result);
-            if (result.moves?.length > 0) this.showMoveArrows(result.moves.slice(0, 3));
+            if (result.moves?.length > 0) {
+                const top = result.moves.slice(0, 3);
+                if (this.settings.singleMove) this.showSingleMoveArrow(this.pickMove(top));
+                else this.showMoveArrows(top);
+            }
         });
     }
 
     // ── Arrows ─────────────────────────────────────────────────────────────
+
+    /**
+     * Pick one of the top moves at random, among those whose eval is within
+     * the threshold of the best move. Scores are from the side to move's view.
+     *   #1, #2, #3 all within threshold of #1 → random of 3
+     *   only #2 within threshold             → random of #1/#2
+     *   otherwise (or #1 is a forced mate)   → #1
+     */
+    pickMove(moves) {
+        const best = moves[0];
+        if (typeof best.score !== 'number') return best; // mate or unknown → play best
+        const threshold = this.settings.singleMoveThreshold;
+        const close = (m) => m && typeof m.score === 'number' && best.score - m.score <= threshold;
+
+        let candidates = [best];
+        if (close(moves[1])) {
+            candidates = close(moves[2]) ? moves.slice(0, 3) : moves.slice(0, 2);
+        }
+        return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+
+    showSingleMoveArrow({ move }) {
+        this.clearArrows();
+        const arrow = { orig: move.substring(0, 2), dest: move.substring(2, 4), brush: 'blue' };
+        this.currentArrows = [arrow];
+        this.board.setShapes([arrow]);
+    }
 
     showMoveArrows(moves) {
         this.clearArrows();

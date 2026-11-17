@@ -95,6 +95,25 @@
                             When enabled, removes text/graphics from the back side of pages that show through in photos.
                         </p>
                     </div>
+                    <div class="settings-group">
+                        <label class="setting-item">
+                            <input type="checkbox" id="singleMoveToggle">
+                            <span>Show one move (random pick among top 3)</span>
+                        </label>
+                        <p class="setting-description">
+                            Shows a single arrow: a random choice among the top moves that are within the
+                            margin below of the best move. Moves that are clearly worse are never picked.
+                        </p>
+                        <label class="setting-item">
+                            <span>Margin</span>
+                            <select id="singleMoveThreshold">
+                                <option value="50">0.5 pawn</option>
+                                <option value="100">1 pawn</option>
+                                <option value="150">1.5 pawns</option>
+                                <option value="200">2 pawns</option>
+                            </select>
+                        </label>
+                    </div>
                     <div class="settings-divider"></div>
                     <button id="rotateFenBtn" class="settings-action-btn" title="Rotate Board 180° — fix scan orientation" aria-label="Rotate Board 180°">
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
